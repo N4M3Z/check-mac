@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Backup files
+*.backup
+*~
+*.swp
+
+# Test output
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.iml
