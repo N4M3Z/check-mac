@@ -141,7 +141,6 @@ br
 # Sharing
 echo "┌ Sharing ───────────────────────────────────────────────────┐"
 data=$(run sharing)
-check "$(key pass_airdrop)"          "AirDrop"         "$DISABLED" "$ENABLED"
 check "$(key pass_printer_sharing)"  "Printer Sharing" "$DISABLED" "$ENABLED"
 check "$(key pass_internet_sharing)" "Internet Sharing" "$DISABLED" "$ENABLED"
 br
