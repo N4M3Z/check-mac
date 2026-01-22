@@ -67,7 +67,12 @@
       "Bash(defaults find MailPrivacy)",
       "Bash(defaults domains:*)",
       "Bash(./tests/test-gpgmail.sh)",
-      "Bash(./checks/loginwindow.sh:*)"
+      "Bash(./checks/loginwindow.sh:*)",
+      "Bash(./checks/bluetooth.sh:*)",
+      "Bash(./tests/test-bluetooth.sh:*)",
+      "Bash(./checks/os.sh:*)",
+      "Bash(./checks/remote-management.sh:*)",
+      "Bash(git -C /Users/mzeman/Developer/N4M3Z/check-mac status --short)"
     ]
   }
 }

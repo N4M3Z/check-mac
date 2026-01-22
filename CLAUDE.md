@@ -16,14 +16,12 @@ check-mac/
 ├── lib/
 │   ├── style.sh          # Colors, symbols, status strings, Nagios codes
 │   └── helpers.sh        # Helper functions (run, key, check, pass, fail, warn, info)
-├── checks/               # Independent check scripts
-│   ├── filevault.sh      # Disk encryption
-│   ├── firewall.sh       # Firewall settings
-│   ├── safari.sh         # Browser security
-│   ├── pass.sh           # Password managers
-│   ├── vpn.sh            # VPN applications
-│   └── ...               # etc.
-└── tests/                # Test scripts
+└── checks/               # Independent check scripts
+    ├── filevault.sh      # Disk encryption
+    ├── firewall.sh       # Firewall settings
+    ├── pass.sh           # Password managers
+    ├── vpn.sh            # VPN applications
+    └── ...               # etc.
 
 ```
 
@@ -36,12 +34,6 @@ check-mac/
 # Run individual check script
 ./checks/filevault.sh
 
-# Run tests
-./tests.sh
-
-# Test individual check (outputs PASS/FAIL)
-./tests/test-filevault.sh
-
 # Make new check executable
 chmod +x checks/new.sh
 ```
@@ -50,7 +42,7 @@ chmod +x checks/new.sh
 
 The codebase follows a separation of concerns design:
 
-1. **Check scripts** (`checks/*.sh`) - Independent, testable scripts that:
+1. **Check scripts** (`checks/*.sh`) - Independent scripts that:
    - Retrieve system settings
    - Test against security best practices
    - Output `variable:value` pairs with Nagios exit codes
@@ -65,11 +57,6 @@ The codebase follows a separation of concerns design:
 3. **Libraries** (`lib/`) - Shared definitions:
    - `style.sh`: Colors, symbols, Nagios codes, status strings
    - `helpers.sh`: Functions for running checks and formatting output
-
-4. **Tests** (`tests/test-*.sh`) - Validation scripts:
-   - Execute check scripts independently
-   - Verify output format (line counts, key:value pairs)
-   - Return PASS/FAIL status
 
 **Data flow:**
 ```
@@ -160,7 +147,6 @@ For more detailed pattern examples see [PATTERNS.md](PATTERNS.md)
 3. Hardcoding strings instead of using variables from `lib/style.sh`
 4. Using `echo | grep` instead of bash pattern matching
 5. Not outputting display values when needed
-6. Not making scripts independently testable
 
 ## Shell Best Practices
 
@@ -175,23 +161,5 @@ For more detailed pattern examples see [PATTERNS.md](PATTERNS.md)
 1. Create `checks/$name.sh` following the pattern
 2. Make executable: `chmod +x checks/$name.sh`
 3. Test independently: `./checks/$name.sh`
-4. Create test script: `tests/test-$name.sh`
-5. Add to `check.sh` orchestrator using `check "$(key pass_name)"` pattern
-6. Use status string variables from `lib/style.sh` (e.g., `$ENABLED`, `$DISABLED`)
-
-## Test Pattern
-
-All test scripts follow this pattern (see `tests/test-filevault.sh`):
-
-```bash
-#!/bin/bash
-DIR="$(dirname "$0")/../checks"
-result=$("$DIR/filevault.sh" 2>/dev/null)
-# Validate output format (e.g., line counts, expected keys)
-[[ $(echo "$result" | wc -l) -ge 3 ]] && echo "PASS" || echo "FAIL"
-```
-
-Tests validate that check scripts:
-- Execute successfully
-- Return expected output format
-- Output required key:value pairs
+4. Add to `check.sh` orchestrator using `check "$(key pass_name)"` pattern
+5. Use status string variables from `lib/style.sh` (e.g., `$ENABLED`, `$DISABLED`)

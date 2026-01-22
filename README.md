@@ -19,11 +19,12 @@ cd check-mac
 
 ## What It Checks
 
-27 check scripts covering:
+27 security checks covering:
 - **Core Security**: FileVault, SIP, Gatekeeper, XProtect, software updates, screen lock
 - **Network**: Firewall, stealth mode, remote access, DNS, Bluetooth, sharing
-- **Privacy**: Siri, analytics, Safari tracking, Mail remote content
-- **User Security**: Auto-login, guest account, login window, admin rights
+- **Privacy**: Siri, analytics, Finder extensions
+- **User Security**: Auto-login, guest account, admin rights
+- **Applications**: Email apps, password managers, VPN
 - **Developer Tools**: Homebrew, Git/Curl/OpenSSL versions
 
 ## Output
@@ -42,12 +43,6 @@ cd check-mac
 - **[PATTERNS.md](PATTERNS.md)** - Check script patterns
 - **[CLAUDE.md](CLAUDE.md)** - Claude Code codebase documentation
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - How to contribute
-
-## Tests
-
-```bash
-./tests.sh
-```
 
 ## Compatibility
 
