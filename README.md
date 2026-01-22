@@ -19,7 +19,7 @@ cd check-mac
 
 ## What It Checks
 
-27 security checks covering:
+48 security checks across 16 categories:
 - **Core Security**: FileVault, SIP, Gatekeeper, XProtect, software updates, screen lock
 - **Network**: Firewall, stealth mode, remote access, DNS, Bluetooth, sharing
 - **Privacy**: Siri, analytics, Finder extensions

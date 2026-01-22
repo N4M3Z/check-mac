@@ -72,7 +72,8 @@
       "Bash(./tests/test-bluetooth.sh:*)",
       "Bash(./checks/os.sh:*)",
       "Bash(./checks/remote-management.sh:*)",
-      "Bash(git -C /Users/mzeman/Developer/N4M3Z/check-mac status --short)"
+      "Bash(git -C /Users/mzeman/Developer/N4M3Z/check-mac status --short)",
+      "Bash(xargs:*)"
     ]
   }
 }

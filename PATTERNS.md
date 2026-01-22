@@ -47,36 +47,36 @@ echo "pass_check:$pass_check"
 
 ## Multiple Checks
 
-From `checks/safari.sh` - testing multiple settings:
+From `checks/firewall.sh` - testing multiple settings:
 
 ```bash
 #!/bin/bash
 # Source: URL
 
 # Retrieve values
-fraud_warning=$(
-    defaults read com.apple.Safari WarnAboutFraudulentWebsites 2>/dev/null
+firewall_enabled=$(
+    defaults read /Library/Preferences/com.apple.alf globalstate 2>/dev/null
 )
-do_not_track=$(
-    defaults read com.apple.Safari SendDoNotTrackHTTPHeader 2>/dev/null
+stealth_mode=$(
+    defaults read /Library/Preferences/com.apple.alf stealthenabled 2>/dev/null
 )
 
 # Apply defaults
-fraud_warning=${fraud_warning:-1}
-do_not_track=${do_not_track:-0}
+firewall_enabled=${firewall_enabled:-0}
+stealth_mode=${stealth_mode:-0}
 
 # Test logic (Nagios exit codes)
 OK=0; WARN=1; CRIT=2; INFO=3
 
-pass_fraud_warning=$WARN
-pass_do_not_track=$INFO
+pass_firewall_enabled=$CRIT
+pass_stealth_mode=$WARN
 
-[[ "$fraud_warning" == "1" ]] && pass_fraud_warning=$OK
-[[ "$do_not_track" == "1" ]] && pass_do_not_track=$OK
+[[ "$firewall_enabled" != "0" ]] && pass_firewall_enabled=$OK
+[[ "$stealth_mode" == "1" ]] && pass_stealth_mode=$OK
 
 # Output
-echo "pass_fraud_warning:$pass_fraud_warning"
-echo "pass_do_not_track:$pass_do_not_track"
+echo "pass_firewall_enabled:$pass_firewall_enabled"
+echo "pass_stealth_mode:$pass_stealth_mode"
 ```
 
 ## With Display Values

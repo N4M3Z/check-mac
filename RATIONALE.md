@@ -390,74 +390,6 @@ However, it conflicts with certain authentication devices (YubiKey) and text exp
 
 ---
 
-### Safari (`safari.sh`)
-
-**What it checks:**
-Multiple privacy and security settings:
-- Fraudulent website warnings
-- Do Not Track header
-- AutoFill for credit cards and passwords
-- JavaScript window opening
-- Auto-opening "safe" downloads
-- Cookie blocking policy
-- WebGL enablement
-- Plugin enablement
-- SHA-1 certificate treatment
-- Search suggestion suppression
-- Full URL display
-
-**Security rationale:**
-Browsers are primary attack vectors for exploitation and tracking. The drduh guide emphasizes Safari's tracking prevention: "removes tracking data stored in Safari after a period of non-interaction" from tracker domains. Profiles create separate browsing contexts for cookie isolation. Lockdown Mode "disables several features across the OS, significantly reducing attack surface" for high-threat scenarios.
-
-Specific settings rationale:
-- **Fraudulent website warnings:** Protects against phishing via Google Safe Browsing
-- **AutoFill disabled:** Prevents credential harvesting from compromised sites
-- **Block popups:** Reduces malvertising and social engineering attacks
-- **Auto-open safe downloads:** Disabled to prevent automatic code execution
-- **Block third-party cookies:** Prevents cross-site tracking
-- **WebGL/plugins disabled:** Reduces fingerprinting and exploit surface
-- **Show full URLs:** Enables detection of homograph attacks and subdomain tricks
-
-**Recommended settings:**
-- Fraudulent website warnings: `1` (enabled)
-- Do Not Track: `1` (enabled)
-- AutoFill passwords/credit cards: `0` (disabled, use password manager instead)
-- Block popups: `1` (enabled)
-- Auto-open downloads: `0` (disabled)
-- Block third-party cookies: `2` or higher
-- WebGL: `0` (disabled for high security)
-- Plugins: `0` (disabled)
-- SHA-1 insecure: `1` (treat as insecure)
-- Suppress search suggestions: `1` (enabled for privacy)
-- Show full URL: `1` (enabled)
-
-**Sources:**
-- [drduh Guide - Safari](https://github.com/drduh/macOS-Security-and-Privacy-Guide#safari)
-- [kristovatlas osx-config-check #49-54, #56, #59, #61-62, #68-74](https://github.com/kristovatlas/osx-config-check)
-
----
-
-### Mail (`mail.sh`)
-
-**What it checks:**
-- Remote content loading (images, tracking pixels)
-- Junk mail filtering enablement
-
-**Security rationale:**
-Email clients represent persistent attack surfaces. Remote content loading enables tracking via web beacons (tracking pixels) and can trigger exploitation through malicious image parsing. The drduh guide emphasizes requiring "explicit approval for email tracking pixels" to provide "user agency over information disclosure."
-
-Junk mail filtering reduces exposure to phishing and malware delivery emails.
-
-**Recommended settings:**
-- Disable remote content: `1` (DisableURLLoading enabled)
-- Junk mail filtering: `1` (enabled)
-
-**Sources:**
-- [drduh Guide - Email](https://github.com/drduh/macOS-Security-and-Privacy-Guide#mail)
-- [kristovatlas osx-config-check #76-77](https://github.com/kristovatlas/osx-config-check)
-
----
-
 ## User Account Security
 
 ### Autologin (`autologin.sh`)
@@ -500,25 +432,6 @@ Guest accounts provide unauthenticated access to the system, creating an anonymo
 
 ---
 
-### Login Window (`loginwindow.sh`)
-
-**What it checks:**
-- Whether full user names are shown at login (vs. name/password fields)
-- Console access configuration
-
-**Security rationale:**
-Showing full names at the login window (user account icons) reveals valid usernames to attackers, reducing authentication to a single-factor challenge (password guessing). Username/password fields require attackers to enumerate valid accounts first.
-
-Console access (accessed via `>console` at login) provides direct command-line access without user authentication if not properly restricted. Disabling console access prevents unauthorized shell access from the login screen.
-
-**Recommended settings:**
-- Show full name: `1` (show name/password fields, not user icons)
-- Disable console access: `1` (prevent >console login)
-
-**Sources:**
-- [drduh Guide - Users](https://github.com/drduh/macOS-Security-and-Privacy-Guide#users)
-
----
 
 ## Developer Tools
 

@@ -189,9 +189,9 @@ echo "┌ Email Apps ───────────────────�
 data=$(run gpgmail)
 email_apps=$(key email_apps)
 if [[ -n "$email_apps" ]]; then
-    check "$(key pass_email_apps)" "Email Apps" "$email_apps" "$NOT_INSTALLED"
+    check "$(key pass_email_apps)" "Secure Email Apps" "$email_apps" "$NOT_INSTALLED"
 else
-    warn "Email Apps" "$NOT_INSTALLED"
+    warn "Secure Email Apps" "$NOT_INSTALLED"
 fi
 br
 
