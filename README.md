@@ -17,6 +17,28 @@ cd check-mac
 ./check.sh
 ```
 
+## ⚠️ Caveats
+
+**This tool has fundamental limitations due to how macOS handles security settings:**
+
+1. **`defaults read` doesn't work reliably** - Most security settings don't appear in preference files unless explicitly changed from defaults. This means we can't verify what's actually configured vs. what we assume is the default.
+
+2. **Apple is deprecating plist-based configuration** - Modern macOS versions (15+/26+) are moving to Declarative Device Management (DDM). Many settings we tried to check (Safari security, Mail privacy, login window) simply can't be verified via `defaults read` anymore.
+
+3. **We removed multiple checks** - During development, we removed Safari, Mail, and loginwindow checks because they were unreliable/broken on modern macOS.
+
+**For serious security auditing, use the official NIST tool instead:**
+
+- **[macOS Security Compliance Project](https://github.com/usnistgov/macos_security)** - Official NIST tool with modern API access
+- **[NIST Documentation](https://pages.nist.gov/macos_security/)** - Supports NIST 800-53, CIS, DISA STIG compliance frameworks
+
+This tool remains useful for:
+- Quick, lightweight security checks
+- Learning bash and security concepts
+- Basic system inventory
+
+But don't rely on it for comprehensive security auditing or compliance validation.
+
 ## What It Checks
 
 48 security checks across 16 categories:
@@ -39,10 +61,10 @@ cd check-mac
 
 ## Documentation
 
-- **[RATIONALE.md](RATIONALE.md)** - Security rationale for each check
-- **[PATTERNS.md](PATTERNS.md)** - Check script patterns
-- **[CLAUDE.md](CLAUDE.md)** - Claude Code codebase documentation
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** - How to contribute
+- [RATIONALE.md](RATIONALE.md) - Security rationale for each check
+- [PATTERNS.md](PATTERNS.md) - Check script patterns
+- [CLAUDE.md](CLAUDE.md) - Claude Code codebase documentation
+- [CONTRIBUTING.md](CONTRIBUTING.md) - How to contribute
 
 ## Compatibility
 
@@ -53,4 +75,4 @@ cd check-mac
 
 ## License
 
-[MIT License](LICENSE.md)
+[MIT License](LICENSE)
