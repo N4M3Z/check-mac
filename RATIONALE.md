@@ -23,20 +23,15 @@ Documentation of security checks, their rationale, and recommended settings.
 
 **What we check:**
 - Whether FileVault disk encryption is active
-- `destroyFVKeyOnStandby` setting (removes encryption key from memory on standby)
-- Hibernate mode configuration (secure sleep settings)
+- Hibernate mode configuration
 
 **Why we check it:**
 FileVault provides full-disk encryption, protecting your data if the device is stolen or physically accessed. Without it, anyone with physical access can remove your drive and read all data.
 
-The `destroyFVKeyOnStandby` setting removes the FileVault key from memory during standby mode, preventing cold-boot attacks where attackers extract encryption keys from RAM. Hibernate mode 25 writes RAM to encrypted disk and powers down completely, providing additional protection against physical attacks.
-
-**Why these are marked `info` not `fail`:**
-The pmset settings are informational because they don't work reliably on Apple Silicon Macs and can cause system crashes when entering standby. Mode 25 also significantly increases wake time.
+Hibernate mode 25 writes RAM to encrypted disk and powers down completely, providing additional protection against physical attacks (cold-boot attacks). However, this setting is marked as informational because it doesn't work reliably on Apple Silicon Macs and can cause system crashes when entering standby. Mode 25 also significantly increases wake time.
 
 **Recommended settings:**
 - FileVault: Enabled (`true`)
-- `destroyFVKeyOnStandby`: `1` (enabled, Intel Macs only)
 - `hibernatemode`: `25` (Intel Macs only, for maximum security on portables)
 
 **References:**
@@ -119,9 +114,10 @@ XProtect is Apple's built-in antivirus that automatically checks files against k
 ### Software Updates (`software-update.sh`)
 
 **What we check:**
-- Automatic update configuration
-- Critical update settings
-- ConfigData install settings
+- Automatic update checking
+- Automatic update downloading
+- Critical security update installation
+- macOS update installation
 
 **Why we check it:**
 Software updates patch known vulnerabilities that attackers actively exploit. Delayed updates leave systems exposed to publicly disclosed vulnerabilities with available exploits. Modern macOS includes rapid security responses (RSR) that deploy critical security fixes quickly without requiring major OS upgrades.
@@ -129,10 +125,10 @@ Software updates patch known vulnerabilities that attackers actively exploit. De
 **Note on modern macOS (26+):** Apple migrated to Declarative Device Management (DDM) for software updates. Settings are now in `/var/db/softwareupdate/SoftwareUpdateDDMStatePersistence.plist` rather than the traditional plist. This check reads from the DDM plist on macOS 26+ and falls back to the old format for older versions.
 
 **Recommended settings:**
-- `AutomaticCheckEnabled`: `1` (check automatically)
-- `AutomaticDownload`: `1` (download automatically)
-- `CriticalUpdateInstall`: `1` (install critical updates)
-- `ConfigDataInstall`: `1` (install system data files)
+- Automatic check: Enabled
+- Automatic download: Enabled
+- Critical updates: Enabled
+- macOS updates: Enabled
 
 **References:**
 - [drduh Guide - Keep macOS Current](https://github.com/drduh/macOS-Security-and-Privacy-Guide#update-macos)
@@ -150,11 +146,11 @@ Software updates patch known vulnerabilities that attackers actively exploit. De
 **Why we check it:**
 Automatic screen locking prevents unauthorized access when you step away from your computer. Without it, anyone can access your files, email, and applications while you're away. Autologin defeats FileVault protection—unattended systems with active sessions expose data to physical attackers who don't require password entry.
 
-Short idle timeouts balance security with usability. Enterprise environments often mandate 5-15 minute timeouts.
+Short idle timeouts balance security with usability.
 
 **Recommended settings:**
 - Screen lock on sleep: Enabled
-- Idle time: 300-900 seconds (5-15 minutes)
+- Idle time: 300 seconds (5 minutes) or less
 
 **References:**
 - [drduh Guide - Screen Lock](https://github.com/drduh/macOS-Security-and-Privacy-Guide#screen-lock)
@@ -236,8 +232,10 @@ Wake on Network Access allows the computer to be woken remotely. While convenien
 ### DNS Configuration (`dns.sh`)
 
 **What we check:**
-- Current DNS servers configured for Wi-Fi
+- Current DNS servers configured for Wi-Fi interface
 - Whether secure/privacy-focused DNS providers are in use
+
+**Note:** Only checks Wi-Fi interface, not Ethernet or other network interfaces.
 
 **Why we check it:**
 Unencrypted DNS leaks all visited domains to ISPs and network observers, enabling surveillance and traffic analysis. DNSSEC validation prevents DNS spoofing attacks by verifying cryptographic signatures on DNS records. Privacy-focused DNS providers (Cloudflare, Quad9, Proton) commit to not logging queries or selling data.
@@ -452,23 +450,17 @@ Outdated development tools create supply chain risks—compromised repositories 
 
 ---
 
-### GPG Mail & Proton Security Tools (`gpgmail.sh`)
+### Email Security (`gpgmail.sh`)
 
 **What we check:**
-- GPGMail installation and encryption/signing defaults
-- Proton Mail, Proton Pass, and ProtonVPN installation
+- Whether GPGMail (OpenPGP encryption for Apple Mail) is installed
+- Whether Proton Mail is installed
 
 **Why we check it:**
-Email encryption protects message confidentiality and integrity. GPGMail integrates OpenPGP into Apple Mail, enabling end-to-end encryption. Default encryption/signing ensures consistent security rather than requiring manual activation per message.
-
-Proton services provide privacy-focused alternatives:
-- **Proton Mail:** End-to-end encrypted email in zero-knowledge architecture
-- **Proton Pass:** Encrypted password manager
-- **ProtonVPN:** Privacy-focused VPN with no-logging policy
+Email encryption protects message confidentiality and integrity. GPGMail integrates OpenPGP into Apple Mail, enabling end-to-end encryption. Proton Mail provides end-to-end encrypted email in a zero-knowledge architecture.
 
 **Recommended settings:**
-- If using GPGMail: Enable default encryption and signing
-- Consider Proton services for privacy-critical communications
+- Consider using GPGMail or Proton Mail for encrypted communications
 
 **References:**
 - [drduh Guide - PGP/GPG](https://github.com/drduh/macOS-Security-and-Privacy-Guide#pgpgpg)
@@ -482,7 +474,6 @@ Proton services provide privacy-focused alternatives:
 
 **What we check:**
 - MDM enrollment status
-- Number of installed configuration profiles
 
 **Why we check it:**
 Mobile Device Management (MDM) profiles provide centralized security policy enforcement in enterprise environments. They enforce security settings that users cannot modify, ensuring consistent security posture across managed devices.
@@ -533,7 +524,6 @@ OS version information is essential for vulnerability assessment. Each macOS ver
 **What we check:**
 - Model Identifier
 - Serial Number
-- Hardware UUID
 
 **Why we check it:**
 Hardware information is essential for:
