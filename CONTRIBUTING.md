@@ -45,6 +45,7 @@ check "$(key pass_check)" "Check Name" "$ENABLED" "$DISABLED"
 - Multi-line command substitution for readability
 - Include source URL in comments
 - Use status variables from `lib/style.sh`: `$ENABLED`, `$DISABLED`, etc.
+- Check scripts with `shellcheck` or another linter before submitting
 
 ## macOS Version Compatibility
 
