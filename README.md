@@ -1,73 +1,77 @@
 # check-mac
 
-macOS security health check tool auditing your system against security best practices.
+## Description
 
-Based on:
-- [drduh's macOS Security Guide](https://github.com/drduh/macOS-Security-and-Privacy-Guide)
-- [Netflix Stethoscope](https://github.com/Netflix-Skunkworks/stethoscope-app)
-- [kristovatlas/osx-config-check](https://github.com/kristovatlas/osx-config-check)
+Lightweight macOS security smoke test. Audits a Mac in a single shell run against drduh's [macOS Security and Privacy Guide][DRDUH] and a handful of other prior-art baselines.
+
+This is a smoke test, not a compliance gate. For compliance auditing use [usnistgov/macos_security][NIST]. See [ARCH-0001 Tool Scope and Limitations](docs/decisions/ARCH-0001 Tool Scope and Limitations.md) for what the tool deliberately does not check.
 
 Built with [Claude Code](CLAUDE.md), contributions welcome.
 
-## Quick Start
-
-```bash
-git clone https://github.com/yourusername/check-mac.git
-cd check-mac
-./check.sh
-```
-
-## What It Checks
-
-48 security checks across 16 categories:
-- **Core Security**: FileVault, SIP, Gatekeeper, XProtect, software updates, screen lock
-- **Network**: Firewall, stealth mode, remote access, DNS, Bluetooth, sharing
-- **Privacy**: Siri, analytics, Finder extensions
-- **User Security**: Auto-login, guest account, admin rights
-- **Applications**: Email apps, password managers, VPN
-- **Developer Tools**: Homebrew, Git/Curl/OpenSSL versions
-
-
-## ⚠️ Caveats
-
-**This tool has fundamental limitations due to how macOS handles security settings:**
-
-**Apple is deprecating plist-based configuration** - Modern macOS versions (15+/26+) are moving to Declarative Device Management (DDM) which is why **`defaults read` doesn't work reliably** for modern version of Apple Mail or Safari. Most security settings don't appear in preference files unless explicitly changed from defaults. This means we can't verify what's actually configured vs. what we assume is the default.
-
-**For serious security auditing, use the official NIST tool instead:**
-
-- [macOS Security Compliance Project](https://github.com/usnistgov/macos_security)
-- [NIST Documentation](https://pages.nist.gov/macos_security/)
-
-This tool remains useful for:
-- Quick, lightweight security checks
-- Learning bash and security concepts
-- Basic system inventory
-
-Don't rely on this for comprehensive security auditing and especially for compliance validation.
-
-## Output
-
-| Symbol | Meaning                 |
-|--------|-------------------------|
-|   ✓    | Pass - optimal setting  |
-|   ✗    | Fail - critical issue   |
-|   !    | Warn - recommended fix  |
-|   ℹ    | Info - no action needed |
-|   ⚙    | MDM - managed setting   |
-
-## Documentation
-
-- [RATIONALE.md](RATIONALE.md) - Security rationale for each check
-- [PATTERNS.md](PATTERNS.md) - Check script patterns
-- [CLAUDE.md](CLAUDE.md) - Claude Code codebase documentation
-- [CONTRIBUTING.md](CONTRIBUTING.md) - How to contribute
-
 ## Compatibility
 
-- Apple Silicon & Intel supported
-- MDM-aware
+Apple Silicon and Intel. macOS 12 Monterey through macOS 26 Tahoe. MDM-aware, with explicit handling of [Declarative Device Management][DDM] managed sources via UNKNOWN results, see [ARCH-0003 Handle Managed Devices](docs/decisions/ARCH-0003 Handle Managed Devices.md).
+
+## Installation
+
+Requires macOS and Xcode Command Line Tools. No Homebrew or other dependencies.
+
+```sh
+xcode-select --install                              # if not already installed
+git clone https://github.com/N4M3Z/check-mac.git
+cd check-mac
+```
+
+## Usage
+
+```sh
+./check.sh                  # status display, exits 0 always
+./check.sh --strict         # exits non-zero on any issue or Unknown
+./check.sh --help           # show flags
+./checks/filevault.sh       # any single check is independently runnable
+```
+
+### Output legend
+
+| Symbol | Meaning                                          |
+| ------ | ------------------------------------------------ |
+| ✓      | Pass, observed and matches expected              |
+| ✗      | Fail, critical issue                             |
+| !      | Warn, recommended fix                            |
+| ℹ      | Info, no action needed                           |
+| ?      | Unknown, could not determine, verify manually    |
+| ⚙      | MDM, managed setting                             |
+
+`./check.sh` always exits 0 by default. The issues counter is a visual cue for humans. Use `--strict` to exit non-zero when any check fails, warns, or returns Unknown (suitable for CI or bootstrap gates). See [ARCH-0002 Nagios Return Codes](docs/decisions/ARCH-0002 Nagios Return Codes.md).
+
+### Coverage
+
+A baseline across these areas:
+
+- **Core security**: FileVault, SIP, Gatekeeper, XProtect, software updates, screen lock
+- **Network**: firewall, stealth mode, remote login, DNS, Bluetooth, sharing
+- **Privacy**: Siri, analytics, Finder extensions, Terminal secure-keyboard
+- **User security**: auto-login, guest account, admin rights
+- **Applications**: secure email apps, password managers, VPN
+- **Developer tools**: Homebrew, Git/Curl/OpenSSL versions
+
+For the full list, run `./check.sh`. For what the tool does **not** cover (persistence, profile payloads, kernel/system extensions, secure-boot policy, recovery-key escrow, Activation Lock), see [ARCH-0001](docs/decisions/ARCH-0001 Tool Scope and Limitations.md).
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow and [docs/decisions/](docs/decisions) for architectural decisions. Existing scripts under `checks/` are the canonical examples (start with `checks/siri.sh` for the simplest UNKNOWN-aware pattern).
+
+## Requirements
+
+| Dependency               | Required | Purpose                            |
+| ------------------------ | -------- | ---------------------------------- |
+| Xcode Command Line Tools | Yes      | Provides `git` and basic toolchain |
+| `shellcheck`             | Optional | Linting before contributing        |
 
 ## License
 
-- [MIT License](LICENSE)
+[EUPL-1.2](LICENSE)
+
+[DRDUH]: https://github.com/drduh/macOS-Security-and-Privacy-Guide
+[NIST]: https://github.com/usnistgov/macos_security
+[DDM]: https://developer.apple.com/documentation/devicemanagement/leveraging-the-declarative-device-management-data-model-and-status-reports

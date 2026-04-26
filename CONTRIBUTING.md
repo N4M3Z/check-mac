@@ -2,40 +2,36 @@
 
 ## Adding a New Check
 
-1. **Create the check script** following [PATTERNS.md](PATTERNS.md):
+1. **Create the check script** following the template below. Existing scripts under `checks/` are the canonical examples; `checks/siri.sh` is the simplest reference. The standard template defaults severity to `$UNKNOWN` and only flips on positive evidence:
 
-```bash
-#!/bin/bash
-# Source: URL
+    ```sh
+    #!/bin/bash
+    # Source: URL
 
-# Retrieve values
-setting=$(
-    defaults read com.example.plist Key 2>/dev/null
-)
+    # Retrieve value
+    setting=$(
+        defaults read com.example.plist Key 2>/dev/null
+    )
 
-# Apply defaults
-setting=${setting:-default}
+    # Test logic
+    OK=0; WARN=1; CRIT=2; INFO=3; UNKNOWN=4
 
-# Test logic (Nagios exit codes)
-OK=0; WARN=1; CRIT=2; INFO=3
+    pass_check=$UNKNOWN
+    [[ "$setting" == "expected" ]] && pass_check=$OK
+    [[ "$setting" == "bad-value" ]] && pass_check=$WARN
 
-pass_check=$CRIT
-[[ "$setting" == "expected" ]] && pass_check=$OK
+    # Output
+    echo "pass_check:$pass_check"
+    ```
 
-# Output
-echo "pass_check:$pass_check"
-```
+2. **Make it executable:** `chmod +x checks/your-check.sh`.
 
-2. **Make it executable**: `chmod +x checks/your-check.sh`
+3. **Add to `check.sh`** orchestrator:
 
-3. **Add to check.sh** orchestrator:
-
-```bash
-data=$(run your-check)
-check "$(key pass_check)" "Check Name" "$ENABLED" "$DISABLED"
-```
-
-4. **Document in RATIONALE.md** with security rationale and sources
+    ```sh
+    data=$(run your-check)
+    check "$(key pass_check)" "Check Name" "$ENABLED" "$DISABLED"
+    ```
 
 ## Coding Standards
 
@@ -43,15 +39,17 @@ check "$(key pass_check)" "Check Name" "$ENABLED" "$DISABLED"
 - Use `[[ ]]` for tests
 - Suppress expected errors: `2>/dev/null`
 - Multi-line command substitution for readability
-- Include source URL in comments
-- Use status variables from `lib/style.sh`: `$ENABLED`, `$DISABLED`, etc.
-- Check scripts with `shellcheck` or another linter before submitting
+- Include source URL in a `# Source:` comment at the top of the script
+- Use status variables from `lib/style.sh` (`$ENABLED`, `$DISABLED`, etc.) rather than hardcoding
+- Default severity is `$UNKNOWN`, never apply `${var:-default}` defaulting that masks empty source
+- Guard external CLI probes with `command -v` (and `xcode-select -p` for Xcode tools) so they do not provoke the GUI installer on a fresh Mac
+- Run `shellcheck checks/*.sh lib/*.sh check.sh` before submitting
 
 ## macOS Version Compatibility
 
-For version-specific features, check for newer commands first:
+Probe new managed-device CLIs first, fall back to legacy `defaults`:
 
-```bash
+```sh
 if command -v new_command >/dev/null 2>&1; then
     result=$(new_command 2>/dev/null)
 else
@@ -59,8 +57,8 @@ else
 fi
 ```
 
-See `checks/software-update.sh` for DDM example (macOS 15+/26+).
+See `checks/software-update.sh` for a worked example. Empty source after both probes must surface as UNKNOWN, see [ARCH-0003 Handle Managed Devices](docs/decisions/ARCH-0003 Handle Managed Devices.md).
 
 ## License
 
-By contributing, you agree contributions are licensed under MIT License.
+By contributing, you agree contributions are licensed under [EUPL-1.2](LICENSE).

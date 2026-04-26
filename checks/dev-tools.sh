@@ -10,16 +10,26 @@ version_gte() {
     printf '%s\n%s' "$2" "$1" | sort -V -C
 }
 
-# Retrieve versions
-git_version=$(
-    git --version 2>/dev/null | awk '{print $3}'
-)
-curl_version=$(
-    curl --version 2>/dev/null | head -1 | awk '{print $2}'
-)
-openssl_version=$(
-    openssl version 2>/dev/null | awk '{print $2}'
-)
+# Retrieve versions (guarded so probes never provoke the Xcode CLT GUI installer
+# on a fresh Mac; an absent CLI is reported as "none", never as a forced install)
+git_version=""
+if command -v git >/dev/null 2>&1 && xcode-select -p >/dev/null 2>&1; then
+    git_version=$(
+        git --version 2>/dev/null | awk '{print $3}'
+    )
+fi
+curl_version=""
+if command -v curl >/dev/null 2>&1; then
+    curl_version=$(
+        curl --version 2>/dev/null | head -1 | awk '{print $2}'
+    )
+fi
+openssl_version=""
+if command -v openssl >/dev/null 2>&1; then
+    openssl_version=$(
+        openssl version 2>/dev/null | awk '{print $2}'
+    )
+fi
 
 # Test logic (Nagios exit codes)
 OK=0; WARN=1; CRIT=2; INFO=3

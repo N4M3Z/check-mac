@@ -5,7 +5,21 @@ DIR="$(dirname "$0")/checks"
 source "$(dirname "$0")/lib/style.sh"
 source "$(dirname "$0")/lib/helpers.sh"
 
+# Parse args
+strict=0
+for arg in "$@"; do
+    case "$arg" in
+        --strict) strict=1 ;;
+        -h|--help)
+            echo "Usage: $0 [--strict]"
+            echo "  --strict   exit non-zero when any check fails, warns, or returns Unknown (for CI)"
+            exit 0
+            ;;
+    esac
+done
+
 issues=0
+unknowns=0
 
 br
 echo "╔══════════════════════════════════════════════════════════════╗"
@@ -227,11 +241,19 @@ br
 
 # Summary
 echo "╔══════════════════════════════════════════════════════════════╗"
-if (( issues == 0 )); then
+if (( issues == 0 && unknowns == 0 )); then
     printf "║  %b  All checks passed!                                      ║\n" "$CHECK_PASS"
-else
+elif (( issues == 0 )); then
+    printf "║  %b  %d indeterminate result(s), verify manually              ║\n" "$CHECK_UNKNOWN" "$unknowns"
+elif (( unknowns == 0 )); then
     printf "║  %b  Found %d issue(s)                                         ║\n" "$CHECK_WARN" "$issues"
+else
+    printf "║  %b  %d issue(s), %d indeterminate                              ║\n" "$CHECK_WARN" "$issues" "$unknowns"
 fi
 echo "╚══════════════════════════════════════════════════════════════╝"
 br
-printf "Legend: %b Pass  %b Fail  %b Warn  %b Info  %b MDM\n" "$CHECK_PASS" "$CHECK_FAIL" "$CHECK_WARN" "$CHECK_INFO" "$CHECK_MDM"
+printf "Legend: %b Pass  %b Fail  %b Warn  %b Info  %b Unknown  %b MDM\n" "$CHECK_PASS" "$CHECK_FAIL" "$CHECK_WARN" "$CHECK_INFO" "$CHECK_UNKNOWN" "$CHECK_MDM"
+
+if (( strict && (issues + unknowns) > 0 )); then
+    exit 1
+fi

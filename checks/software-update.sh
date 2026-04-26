@@ -3,7 +3,9 @@
 
 DDM="/var/db/softwareupdate/SoftwareUpdateDDMStatePersistence"
 
-# Retrieve values - try DDM first (macOS 15+), fall back to old plist
+# Retrieve values: try DDM first (macOS 15+), fall back to legacy plist.
+# Empty results from both branches surface as UNKNOWN per ADR-0003, never
+# coerced to "0", which would mask DDM-managed Macs as misconfigured.
 if [ -f "${DDM}.plist" ]; then
     auto_check=$(
         defaults read "$DDM" SUCorePersistedStatePolicyFields 2>/dev/null |
@@ -22,8 +24,7 @@ if [ -f "${DDM}.plist" ]; then
         grep automaticallyInstallSystemAndSecurityUpdates | awk '{print $3}' | tr -d ';'
     )
 else
-    # Old plist
-    [[ "$(softwareupdate --schedule 2>/dev/null)" == *"turned on"* ]] && auto_check=1 || auto_check=0
+    [[ "$(softwareupdate --schedule 2>/dev/null)" == *"turned on"* ]] && auto_check=1 || auto_check=
     auto_download=$(
         defaults read /Library/Preferences/com.apple.SoftwareUpdate AutomaticDownload 2>/dev/null
     )
@@ -35,24 +36,24 @@ else
     )
 fi
 
-# Apply defaults
-auto_check=${auto_check:-0}
-auto_download=${auto_download:-0}
-auto_install_os=${auto_install_os:-0}
-auto_install_security=${auto_install_security:-0}
+# Test logic (Nagios exit codes plus UNKNOWN; see ADR-0003)
+OK=0; WARN=1; CRIT=2; INFO=3; UNKNOWN=4
 
-# Test logic (Nagios exit codes)
-OK=0; WARN=1; CRIT=2; INFO=3
-
-pass_auto_check=$CRIT
-pass_auto_download=$INFO
-pass_critical_updates=$CRIT
-pass_macos_updates=$INFO
-
+pass_auto_check=$UNKNOWN
 [[ "$auto_check" == "1" ]] && pass_auto_check=$OK
+[[ "$auto_check" == "0" ]] && pass_auto_check=$CRIT
+
+pass_auto_download=$UNKNOWN
 [[ "$auto_download" == "1" ]] && pass_auto_download=$OK
+[[ "$auto_download" == "0" ]] && pass_auto_download=$INFO
+
+pass_critical_updates=$UNKNOWN
 [[ "$auto_install_security" == "1" ]] && pass_critical_updates=$OK
+[[ "$auto_install_security" == "0" ]] && pass_critical_updates=$CRIT
+
+pass_macos_updates=$UNKNOWN
 [[ "$auto_install_os" == "1" ]] && pass_macos_updates=$OK
+[[ "$auto_install_os" == "0" ]] && pass_macos_updates=$INFO
 
 # Output
 echo "pass_auto_check:$pass_auto_check"

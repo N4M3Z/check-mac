@@ -2,164 +2,73 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
----
+## What this is
 
-# check-mac
+`check-mac` is a macOS security health check shell tool. `check.sh` orchestrates independent check scripts under `checks/`, each auditing one facet of the system (FileVault, firewall, SIP, remote access, etc.). Output is human-readable with colored status symbols.
 
-macOS security health check scripts.
+Authoritative reading order for context: [README.md](README.md) for the user-facing framing, then the three ADRs under [docs/decisions/](docs/decisions) for design intent.
 
-## Structure
+## Critical caveat
 
-```
-check-mac/
-├── check.sh              # Main script - orchestrates all checks
-├── lib/
-│   ├── style.sh          # Colors, symbols, status strings, Nagios codes
-│   └── helpers.sh        # Helper functions (run, key, check, pass, fail, warn, info)
-└── checks/               # Independent check scripts
-    ├── filevault.sh      # Disk encryption
-    ├── firewall.sh       # Firewall settings
-    ├── pass.sh           # Password managers
-    ├── vpn.sh            # VPN applications
-    └── ...               # etc.
+Apple is deprecating plist-based configuration in favor of Declarative Device Management. On macOS 15+ / 26+, `defaults read` returns nothing for many settings that have moved into managed profile payloads. The tool surfaces this as a fourth severity, **UNKNOWN**, rather than silently passing or failing. See [ARCH-0003 Handle Managed Devices](docs/decisions/ARCH-0003 Handle Managed Devices.md) for the policy and the canonical implementation pattern (`checks/software-update.sh`).
 
-```
-
-## Commands
-
-```bash
-# Run all checks
-./check.sh
-
-# Run individual check script
-./checks/filevault.sh
-
-# Make new check executable
-chmod +x checks/new.sh
-```
+Before "fixing" a check that returns UNKNOWN, verify the setting via `sudo profiles show -output stdout-xml` or the relevant native CLI (`fdesetup`, `csrutil`, `spctl`, `pmset`, `systemsetup`, `scutil`). README points users to the NIST `macos_security` project for compliance-grade auditing.
 
 ## Architecture
 
-The codebase follows a separation of concerns design:
-
-1. **Check scripts** (`checks/*.sh`) - Independent scripts that:
-   - Retrieve system settings
-   - Test against security best practices
-   - Output `variable:value` pairs with Nagios exit codes
-   - Can be executed independently for testing
-
-2. **Orchestrator** (`check.sh`) - Runs all checks and formats output:
-   - Sources library files (`lib/style.sh`, `lib/helpers.sh`)
-   - Calls check scripts via `run()` helper
-   - Extracts results via `key()` helper
-   - Displays formatted results via `check()`, `pass()`, `fail()`, `warn()`, `info()`
-
-3. **Libraries** (`lib/`) - Shared definitions:
-   - `style.sh`: Colors, symbols, Nagios codes, status strings
-   - `helpers.sh`: Functions for running checks and formatting output
-
-**Data flow:**
-```
-check script → pass_variable:code → check.sh → formatted output
-  (test)         (0/1/2/3)            (display)
+```text
+check.sh                 orchestrator: sources lib/, calls run(), formats output, --strict for CI
+lib/style.sh             colors, Nagios codes (OK/WARN/CRIT/INFO/UNKNOWN), status strings
+lib/helpers.sh           run(), key(), check(), pass/fail/warn/info/unknown, issues + unknowns counters
+checks/*.sh              independent scripts, one topic each (canonical examples)
+docs/decisions/          architecture decision records (ARCH-NNNN)
+CONTRIBUTING.md          contribution workflow with check template
 ```
 
-**Nagios exit codes:**
-- `0` = OK (green ✓) - security setting is optimal
-- `1` = WARNING (yellow !) - recommended to fix
-- `2` = CRITICAL (red ✗) - security issue
-- `3` = INFO (blue ℹ) - informational, no action needed
+Data flow: orchestrator calls `data=$(run <name>)` which executes `checks/<name>.sh` and captures its `variable:value` lines. `key <name>` extracts a specific value from `$data`. `check <code> <label> <pass_msg> <fail_msg>` dispatches the severity code to `pass`/`warn`/`fail`/`info`/`unknown` display helpers.
 
-## Patterns
+Severity codes flow from check scripts to display: `0` OK, `1` WARN, `2` CRIT, `3` INFO, `4` UNKNOWN. Constants are defined in both `lib/style.sh` and inline in every check script. The duplication is intentional, see [ARCH-0002 Nagios Return Codes](docs/decisions/ARCH-0002 Nagios Return Codes.md).
 
-### Check Script Pattern (checks/$name.sh)
+## Commands
 
-All check scripts follow this exact pattern:
-
-```bash
-#!/bin/bash
-# Source: URL
-
-# Retrieve values
-setting=$(
-    command 2>/dev/null
-)
-
-# Apply defaults
-setting=${setting:-default}
-
-# Test logic (Nagios exit codes)
-OK=0; WARN=1; CRIT=2; INFO=3
-
-pass_check=$CRIT
-[[ "$setting" == "expected" ]] && pass_check=$OK
-
-# Output
-echo "pass_check:$pass_check"
+```sh
+./check.sh                                 # full audit, exits 0 always
+./check.sh --strict                        # exits non-zero on any issue or Unknown (CI mode)
+./check.sh --help                          # show flags
+./checks/filevault.sh                      # run one check, prints raw variable:value
+shellcheck checks/*.sh lib/*.sh check.sh   # lint before committing
+chmod +x checks/<new>.sh                   # required after creating a new check
 ```
 
-**Key principles:**
-- Scripts are independently executable
-- Use multi-line command substitution for readability
-- Set default severity first, then test and update
-- Output `pass_variable:code` format
-- Include display values when needed (e.g., version numbers)
+There is no build step, test framework, or package manager. Each check script is its own test harness: run it and inspect the `pass_*` lines.
 
-### Orchestrator Pattern (check.sh)
+## Adding a check
 
-```bash
-data=$(run filevault)
-check "$(key pass_filevault_enabled)" "FileVault" "$ENABLED" "$DISABLED"
-```
+1. Copy the template from [CONTRIBUTING.md](CONTRIBUTING.md) into `checks/<name>.sh`, or start from an existing script (`checks/siri.sh` is the simplest reference). The file structure (retrieve, Nagios constants, test, output) is non-negotiable because the orchestrator and future readers rely on it.
+2. `chmod +x checks/<name>.sh` and verify standalone output.
+3. Wire into `check.sh` via `data=$(run <name>)` then `check "$(key pass_<var>)" "<Label>" "$ENABLED" "$DISABLED"` (or the list/display-value variants shown in existing checks).
+4. Carry a `# Source:` comment at the top pointing to the upstream reference (drduh guide, stethoscope, osx-config-check, Apple docs).
+5. Reuse status strings from `lib/style.sh` (`$ENABLED`, `$DISABLED`, `$LISTENING`, `$INSTALLED`, etc.) rather than hardcoding.
+6. If the check reads a `defaults` key that may be managed by a profile, follow the UNKNOWN-aware pattern: default severity is `$UNKNOWN`, flip to `$OK` on positive match, flip to `$WARN`/`$CRIT` on observed misconfiguration. Empty source stays UNKNOWN. See `checks/siri.sh` or `checks/software-update.sh` for examples.
 
-## Pattern Matching
+## Conventions specific to this repo
 
-Use bash built-ins instead of `echo | grep`:
-
-```bash
-# Good - bash built-in
-[[ "$status" == *"enabled"* ]]
-[[ "$ports" =~ \.22[[:space:]] ]]
-[[ "$groups" == *admin* ]]
-
-# Bad - subprocess spawn
-echo "$status" | grep -q "enabled"
-```
-
-## macOS Version Handling
-
-Check for newer commands first, fall back to older:
-
-```bash
-if command -v new_command >/dev/null 2>&1; then
-    result=$(new_command 2>/dev/null)
-else
-    result=$(old_command 2>/dev/null)
-fi
-```
-
-For more detailed pattern examples see [PATTERNS.md](PATTERNS.md)
-
-## Common Pitfalls
-
-1. Not quoting command substitutions: `check "$(key pass_check)"`
-2. Not setting default severity before testing
-3. Hardcoding strings instead of using variables from `lib/style.sh`
-4. Using `echo | grep` instead of bash pattern matching
-5. Not outputting display values when needed
-
-## Shell Best Practices
-
-- Always quote variables: `"$variable"`
-- Use `[[ ]]` for tests, not `[ ]`
-- Suppress expected errors: `2>/dev/null`
-- Use multi-line command substitution for readability
-- Follow exact spacing/structure from existing checks
-
-## Adding New Checks
-
-1. Create `checks/$name.sh` following the pattern
-2. Make executable: `chmod +x checks/$name.sh`
-3. Test independently: `./checks/$name.sh`
-4. Add to `check.sh` orchestrator using `check "$(key pass_name)"` pattern
-5. Use status string variables from `lib/style.sh` (e.g., `$ENABLED`, `$DISABLED`)
+- Bash pattern matching over subprocesses: `[[ "$s" == *enabled* ]]`, not `echo "$s" | grep`.
+- Multi-line command substitution for readability:
+    ```sh
+    setting=$(
+        defaults read com.apple.foo Bar 2>/dev/null
+    )
+    ```
+- Guard external CLI probes so they do not provoke installers. `git --version` on a fresh Mac without Xcode CLT triggers the GUI installer mid-audit; wrap with `command -v` and `xcode-select -p`. See `checks/dev-tools.sh`.
+- Probe new managed-device CLIs first, fall back to legacy `defaults`:
+    ```sh
+    if command -v new_command >/dev/null 2>&1; then
+        result=$(new_command 2>/dev/null)
+    else
+        result=$(old_command 2>/dev/null)
+    fi
+    ```
+    `checks/software-update.sh` is the canonical example.
+- Suppress expected errors (`2>/dev/null`); an absent plist or unset key is the common case, not an exception to surface, but it must surface as UNKNOWN, not as silent OK.
+- The default severity for a check is `$UNKNOWN`, flipped to `$OK` only on positive match. This makes "could not retrieve the value" fail safe rather than silent. WARN and CRIT are reserved for observed misconfigurations.
