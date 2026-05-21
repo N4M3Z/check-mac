@@ -31,5 +31,9 @@ Temporary Items
 *~
 *.log
 
-# Claude Code
+# forge-installed artifacts (regenerated from .forge via `forge install`)
 .claude/
+.gemini/
+.codex/
+.opencode/
+build/

@@ -1,0 +1,11 @@
+version: 1
+sources:
+    forge-core:
+        path: ../forge-core
+    forge-dev:
+        path: ../forge-dev
+artifacts:
+    forge-core:
+        skills: [BashConventions, ArchitectureDecision, VersionControl, StagedReview, MarkdownConventions]
+    forge-dev:
+        skills: [AuditScripts]
